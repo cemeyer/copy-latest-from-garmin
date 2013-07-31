@@ -14,22 +14,41 @@ function main(){
 
     cd "$gapath" || die "Couldn't find activities directory: %s" "$gapath"
 
-    fitname="`ls -htr | tail -n1`"
-    if ! ( echo "$fitname" | grep -q ".fit" ) ; then
-        die "No activity file present?!"
+    empty=1
+    copied=0
+
+    ls -ht | while read fitname; do
+        empty=0
+
+        if [ -f "$hgpath/garmin/${fitname}" ]; then
+            echo "Already copied ${fitname}"
+            break
+        fi
+
+        cp "$fitname" "$hgpath/garmin/" || die "Couldn't copy activity"
+
+        echo "Copying ${fitname}"
+        copied=$((copied+1))
+
+        date="${fitname/.fit/}"
+        pushd "$hgpath" >/dev/null || die "Couldn't find run directory?!"
+
+        echo "Converting ${fitname} to ${date}.gpx"
+        gpsbabel -i garmin_fit -f "garmin/${date}.fit" -o gpx -F "gpx/${date}.gpx" \
+            || die "gpsbabel failed"
+
+        popd >/dev/null
+    done
+
+    if [ "x$empty" = "x1" ]; then
+        die "No activity file(s) present?!"
     fi
 
-    if [ -f "$hgpath/garmin/${fitname}" ]; then
-        die "Already copied latest activity"
+    if [ "x$copied" = "x0" ]; then
+        echo "No new activity files found."
+    else
+        echo "Successfully imported the last ${copied} .fit files!"
     fi
-
-    cp "$fitname" "$hgpath/garmin/" || die "Couldn't copy activity"
-
-    date="${fitname/.fit/}"
-    cd "$hgpath" || die "Couldn't find run directory?!"
-
-    gpsbabel -i garmin_fit -f "garmin/${date}.fit" -o gpx -F "gpx/${date}.gpx" \
-        || die "gpsbabel failed"
 }
 
 main
