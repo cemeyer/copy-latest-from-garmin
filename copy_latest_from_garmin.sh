@@ -1,16 +1,36 @@
 #!/usr/bin/zsh
 
+mntpath=/mnt/GARMIN
+gapath="${mntpath}/Garmin/Activities"
+hgpath="$HOME/docs/run"
+devpath="/dev/disk/by-id/usb-Garmin_FR110_Flash_0000e5289a00-0:0"
+mounted=0
+
+function cleanup(){
+    cd /
+    if [ $mounted -eq 1 ]; then
+        sudo umount "$mntpath"
+    fi
+}
+
 function die(){
     fmt="$1"
     shift
 
     printf "${fmt}\n" "$@"
+
+    cleanup
+
     exit 1
 }
 
 function main(){
-    gapath=/run/media/conrad/GARMIN/Garmin/Activities
-    hgpath="$HOME/docs/run"
+    if [ "x`id -u`" != "x0" ]; then
+        echo "Mounting '$devpath' on '$mntpath'"
+    fi
+
+    sudo mount "$devpath" "$mntpath" || die "Couldn't mount %s" "$devpath"
+    mounted=1
 
     cd "$gapath" || die "Couldn't find activities directory: %s" "$gapath"
 
@@ -49,6 +69,8 @@ function main(){
     else
         echo "Successfully imported the last ${copied} .fit files!"
     fi
+
+    cleanup
 }
 
 main
