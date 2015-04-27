@@ -54,7 +54,8 @@ function main(){
         pushd "$hgpath" >/dev/null || die "Couldn't find run directory?!"
 
         echo "Converting ${fitname} to ${date}.gpx"
-        gpsbabel -i garmin_fit -f "garmin/${date}.fit" -o gpx -F "gpx/${date}.gpx" \
+        gpsbabel -i garmin_fit -f "garmin/${date}.fit" \
+            -o 'gpx,garminextensions=1' -F "gpx/${date}.gpx" \
             || die "gpsbabel failed"
 
         popd >/dev/null
