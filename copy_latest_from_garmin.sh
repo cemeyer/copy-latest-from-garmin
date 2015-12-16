@@ -1,9 +1,9 @@
 #!/usr/bin/zsh
 
 mntpath=/mnt/GARMIN
-gapath="${mntpath}/Garmin/Activities"
+gapath="${mntpath}/GARMIN/ACTIVITY"
 hgpath="$HOME/docs/run"
-devpath="/dev/disk/by-id/usb-Garmin_FR110_Flash_0000e5289a00-0:0"
+devpath="/dev/disk/by-id/usb-Garmin_FR230_Flash-0:0"
 mounted=0
 
 function cleanup(){
@@ -40,20 +40,23 @@ function main(){
     ls -ht | while read fitname; do
         empty=0
 
-        if [ -f "$hgpath/garmin/${fitname}" ]; then
-            echo "Already copied ${fitname}"
+        date="$(date --reference "$fitname" +"%Y-%m-%d-%H-%M-%S")"
+
+        if [ -f "$hgpath/garmin/${date}.fit" ]; then
+            echo "Already copied ${fitname} (${date}.fit)"
             break
         fi
 
-        cp "$fitname" "$hgpath/garmin/" || die "Couldn't copy activity"
-
         echo "Copying ${fitname}"
+        cp "$fitname" "$hgpath/garmin/" || die "Couldn't copy activity"
         copied=$((copied+1))
 
-        date="${fitname/.fit/}"
+        echo "Renaming to '${date}.fit'"
+        mv "$hgpath/garmin/$fitname" "$hgpath/garmin/${date}.fit"
+
         pushd "$hgpath" >/dev/null || die "Couldn't find run directory?!"
 
-        echo "Converting ${fitname} to ${date}.gpx"
+        echo "Converting ${date}.fit to ${date}.gpx"
         gpsbabel -i garmin_fit -f "garmin/${date}.fit" \
             -o 'gpx,garminextensions=1' -F "gpx/${date}.gpx" \
             || die "gpsbabel failed"
