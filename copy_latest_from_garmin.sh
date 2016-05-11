@@ -1,7 +1,9 @@
 #!/usr/bin/zsh
 
+BASEDIR="$(dirname "$(realpath "$0")")"
 mntpath=/mnt/GARMIN
 gapath="${mntpath}/GARMIN/ACTIVITY"
+epopath="${mntpath}/GARMIN/REMOTESW/EPO.BIN"
 hgpath="$HOME/docs/run"
 devpath="/dev/disk/by-id/usb-Garmin_FR230_Flash-0:0"
 mounted=0
@@ -22,6 +24,42 @@ function die(){
     cleanup
 
     exit 1
+}
+
+# Fetch GPS cache data:
+function fetch_epo(){
+    local tmpepo
+    local procepo
+    local i
+
+    tmpepo="$(mktemp)"
+
+    echo "Fetching Garmin satellite data."
+    curl --silent \
+        --header "Garmin-Client-Name: CoreService" \
+        --header "Content-Type: application/octet-stream" \
+        --data-binary "@${BASEDIR}/garmin-postdata" \
+        http://omt.garmin.com/Rce/ProtobufApi/EphemerisService/GetEphemerisData \
+        > "$tmpepo"
+
+    procepo="$(mktemp)"
+    rm -f "$procepo"
+
+    for i in `seq 28`; do
+        tail -c +$(( (4 + (2307 * (i - 1) ) ) )) < "$tmpepo" | head -c 2304 >> "$procepo"
+    done
+
+    rm -f "$tmpepo"
+
+    if [ $(wc -c <"$procepo") -ne 64512 ]; then
+        echo "Processed EPO wrong size! Skipping"
+        rm -f "$procepo"
+        return
+    fi
+
+    sudo install -m755 "$procepo" "$epopath"
+    sync
+    echo "Installed latest GPS satellite data!"
 }
 
 function main(){
@@ -63,6 +101,10 @@ function main(){
 
         popd >/dev/null
     done
+
+    echo
+    fetch_epo
+    echo
 
     if [ "x$empty" = "x1" ]; then
         die "No activity file(s) present?!"
