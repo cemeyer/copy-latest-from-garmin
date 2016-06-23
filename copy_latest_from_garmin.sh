@@ -1,11 +1,16 @@
-#!/usr/bin/zsh
+#!/usr/bin/env zsh
 
 BASEDIR="$(dirname "$(realpath "$0")")"
 mntpath=/mnt/GARMIN
 gapath="${mntpath}/GARMIN/ACTIVITY"
 epopath="${mntpath}/GARMIN/REMOTESW/EPO.BIN"
 hgpath="$HOME/docs/run"
-devpath="/dev/disk/by-id/usb-Garmin_FR230_Flash-0:0"
+if [ "$(uname -s)" = "FreeBSD" ]; then
+    # XXX Would be nice if this wasn't hardcoded
+    devpath="/dev/da0"
+else
+    devpath="/dev/disk/by-id/usb-Garmin_FR230_Flash-0:0"
+fi
 mounted=0
 
 function cleanup(){
@@ -67,7 +72,11 @@ function main(){
         echo "Mounting '$devpath' on '$mntpath'"
     fi
 
-    sudo mount "$devpath" "$mntpath" || die "Couldn't mount %s" "$devpath"
+    if [ "$(uname -s)" = "FreeBSD" ]; then
+	sudo mount -t msdosfs "$devpath" "$mntpath" || die "Couldn't mount %s" "$devpath"
+    else
+	sudo mount "$devpath" "$mntpath" || die "Couldn't mount %s" "$devpath"
+    fi
     mounted=1
 
     cd "$gapath" || die "Couldn't find activities directory: %s" "$gapath"
