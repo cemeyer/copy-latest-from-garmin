@@ -78,7 +78,7 @@ function main(){
     ls -ht | while read fitname; do
         empty=0
 
-        date="$(date --reference "$fitname" +"%Y-%m-%d-%H-%M-%S")"
+        date="$(date -r "$fitname" +"%Y-%m-%d-%H-%M-%S")"
 
         if [ -f "$hgpath/garmin/${date}.fit" ]; then
             echo "Already copied ${fitname} (${date}.fit)"
