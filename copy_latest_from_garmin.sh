@@ -44,7 +44,7 @@ function fetch_epo(){
         --header "Garmin-Client-Name: CoreService" \
         --header "Content-Type: application/octet-stream" \
         --data-binary "@${BASEDIR}/garmin-postdata" \
-        http://omt.garmin.com/Rce/ProtobufApi/EphemerisService/GetEphemerisData \
+        https://omt.garmin.com/Rce/ProtobufApi/EphemerisService/GetEphemerisData \
         > "$tmpepo"
 
     procepo="$(mktemp)"
